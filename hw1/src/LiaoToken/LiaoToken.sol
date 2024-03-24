@@ -18,6 +18,8 @@ contract LiaoToken is IERC20 {
     mapping(address account => uint256) private _balances;
     mapping(address account => bool) isClaim;
 
+    mapping(address => mapping(address => uint256)) private _allowances;
+
     uint256 private _totalSupply;
 
     string private _name;
@@ -58,6 +60,7 @@ contract LiaoToken is IERC20 {
         return true;
     }
 
+    /*
     function transfer(address to, uint256 amount) external returns (bool) {
         // TODO: please add your implementaiton here
     }
@@ -72,5 +75,37 @@ contract LiaoToken is IERC20 {
 
     function allowance(address owner, address spender) public view returns (uint256) {
         // TODO: please add your implementaiton here
+    }
+    */
+    function transfer(address to, uint256 amount) external override returns (bool) {
+        require(to != address(0), "ERC20: transfer to the zero address");
+        require(_balances[msg.sender] >= amount, "ERC20: transfer amount exceeds balance");
+        
+        _balances[msg.sender] -= amount;
+        _balances[to] += amount;
+        emit Transfer(msg.sender, to, amount);
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 value) external override returns (bool) {
+        require(to != address(0), "ERC20: transfer to the zero address");
+        require(_balances[from] >= value, "ERC20: transfer amount exceeds balance");
+        require(_allowances[from][msg.sender] >= value, "ERC20: transfer amount exceeds allowance");
+        
+        _balances[from] -= value;
+        _balances[to] += value;
+        _allowances[from][msg.sender] -= value;
+        emit Transfer(from, to, value);
+        return true;
+    }
+
+    function approve(address spender, uint256 amount) external override returns (bool) {
+        _allowances[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+
+    function allowance(address owner, address spender) public view override returns (uint256) {
+        return _allowances[owner][spender];
     }
 }
