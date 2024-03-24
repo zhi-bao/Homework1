@@ -76,29 +76,93 @@ contract NFinTech is IERC721 {
 
     function setApprovalForAll(address operator, bool approved) external {
         // TODO: please add your implementaiton here
+        require(operator != address(0), "INVALID_RECIPIENT");
+
+        _operatorApproval[msg.sender][operator] = approved;
+
+        emit ApprovalForAll(msg.sender, operator, approved);
     }
 
     function isApprovedForAll(address owner, address operator) public view returns (bool) {
         // TODO: please add your implementaiton here
+        return _operatorApproval[owner][operator];
+
     }
 
     function approve(address to, uint256 tokenId) external {
         // TODO: please add your implementaiton here
+        address owner = ownerOf(tokenId);
+        require(msg.sender == owner || isApprovedForAll(owner, msg.sender), "NOT_AUTHORIZED");
+
+        _tokenApproval[tokenId] = to;
+        emit Approval(owner, to, tokenId);
     }
 
     function getApproved(uint256 tokenId) public view returns (address operator) {
         // TODO: please add your implementaiton here
+        return _tokenApproval[tokenId];
     }
 
     function transferFrom(address from, address to, uint256 tokenId) public {
         // TODO: please add your implementaiton here
+
+        require(from == ownerOf(tokenId), "WRONG_FROM");
+
+        require(to != address(0), "INVALID_RECIPIENT");
+
+        require(
+            msg.sender == from || isApprovedForAll(from, msg.sender) || msg.sender == getApproved(tokenId),
+            "NOT_AUTHORIZED"
+        );
+
+        // Underflow of the sender's balance is impossible because we check for
+        // ownership above and the recipient's balance can't realistically overflow.
+        unchecked {
+            _balances[from]--;
+
+           _balances[to]++;
+        }
+
+        _owner[tokenId] = to;
+
+        delete _tokenApproval[tokenId];
+
+        emit Transfer(from, to, tokenId);
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) public {
         // TODO: please add your implementaiton here
+        transferFrom(from, to, tokenId);
+
+        require(
+            to.code.length == 0 ||
+                ERC721TokenReceiver(to).onERC721Received(msg.sender, from, tokenId, data) ==
+                ERC721TokenReceiver.onERC721Received.selector,
+            "UNSAFE_RECIPIENT"
+        );
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId) public {
         // TODO: please add your implementaiton here
+        transferFrom(from, to, tokenId);
+
+        require(
+            to.code.length == 0 ||
+                ERC721TokenReceiver(to).onERC721Received(msg.sender, from, tokenId, "") ==
+                ERC721TokenReceiver.onERC721Received.selector,
+            "UNSAFE_RECIPIENT"
+        );
+    }
+}
+
+
+abstract contract ERC721TokenReceiver {
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return ERC721TokenReceiver.onERC721Received.selector;
     }
 }
