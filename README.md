@@ -24,4 +24,4 @@
 
 ### Delegation
 
-1. **forge test --mt test_check_exploit -vvv** : No implementation
+1. **forge test --mt test_check_exploit -vvv** : Pass
